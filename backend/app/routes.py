@@ -5,6 +5,9 @@ from app.forms import LoginForm, RegistrationForm
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
+import logging
+from flask import jsonify
+
 
 @app.route('/')
 def index():
@@ -65,6 +68,7 @@ def search_commanders():
 def add_commander():
     try:
         data = request.get_json()
+        logging.info("Received data:", data)
 
         if not data or 'name' not in data:
             return jsonify({'error': 'Missing commander name'}), 400
@@ -73,7 +77,8 @@ def add_commander():
         new_commander = Commander(
             user_id=current_user.id,  # Link to the current logged-in user
             name=data['name'],
-            # Add other fields if necessary
+            color_identity=data.get('color_identity', ''),  # Get color identity if provided
+            image_url=data.get('image_url', '')  # Get image URL if provided
         )
         db.session.add(new_commander)
         db.session.commit()
@@ -83,4 +88,18 @@ def add_commander():
     except KeyError as e:
         return jsonify({'error': f'Missing data for {e.args[0]}'}), 400
     except Exception as e:
+        logging.error(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/delete_commander/<int:commander_id>', methods=['POST'])
+@login_required
+def delete_commander(commander_id):
+    commander = Commander.query.get(commander_id)
+    if commander and commander.user_id == current_user.id:
+        db.session.delete(commander)
+        db.session.commit()
+        flash('Commander deleted successfully', 'success')
+        return jsonify({'message': 'Commander deleted successfully'}), 200
+    else:
+        flash('Commander not found or unauthorized', 'danger')
+    return redirect(url_for('account'))
