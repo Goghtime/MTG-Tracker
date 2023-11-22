@@ -9,3 +9,4 @@ wtforms
 email_validator
 Flask-Migrate
 requests
+jsonify
