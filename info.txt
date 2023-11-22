@@ -1,0 +1,26 @@
+docker logs mt_mtg_tracker_backend_1
+---------------------------------------
+docker exec -it mt_mtg_tracker_backend_1 flask shell
+Python 3.10.13 (main, Nov  1 2023, 14:15:37) [GCC 12.2.0] on linux
+App: app
+Instance: /usr/src/app/instance
+>>> from app.models import User
+>>> users = User.query.all()
+>>> for user in users:
+...     print(user.username, user.email)
+... 
+mbonorand mbonorand@gmail.com
+mbonorand1 mbonorand1@gmail.com
+
+-----------------
+docker exec -it mt_mtg_tracker_backend_1 flask routes
+Endpoint     Methods    Rule                   
+-----------  ---------  -----------------------
+account      GET        /account               
+get_session  GET        /get_session           
+index        GET        /                      
+login        GET, POST  /login                 
+logout       GET        /logout                
+register     GET, POST  /register              
+set_session  GET        /set_session           
+static       GET        /static/<path:filename>

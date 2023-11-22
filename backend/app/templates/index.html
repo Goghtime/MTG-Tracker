@@ -1,0 +1,17 @@
+<!-- templates/index.html -->
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Welcome to MTG Tracker</h1>
+<p>This is the home page.</p>
+
+<!-- Show account button only to logged-in users -->
+{% if current_user.is_authenticated %}
+    <a href="{{ url_for('account') }}"><button>Account</button></a>
+    <a href="{{ url_for('logout') }}"><button>Logout</button></a>
+{% else %}
+    <a href="{{ url_for('login') }}"><button>Login</button></a>
+    <a href="{{ url_for('register') }}"><button>Register</button></a>
+{% endif %}
+
+{% endblock %}
