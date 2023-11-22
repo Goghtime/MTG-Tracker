@@ -1,0 +1,80 @@
+<!-- templates/account.html -->
+
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Account Page</h2>
+<p>Welcome, {{ current_user.username }}! This is your account page.</p>
+
+<!-- Commander search input and results container -->
+<input type="text" id="commander-search" placeholder="Search for a commander...">
+<div id="search-results"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function() {
+    var $searchResults = $('#search-results');
+    var csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+    $('#commander-search').on('input', function() {
+      var searchQuery = $(this).val();
+      if (searchQuery.length >= 3) {
+        $.ajax({
+          url: '/search_commanders?q=' + encodeURIComponent(searchQuery),
+          type: 'GET',
+          success: function(data) {
+            var items = [];
+            $.each(data, function(i, commander) {
+              items.push('<button type="button" class="commander-item" data-name="' + commander.name + '">' + commander.name + '</button>');
+            });
+            $searchResults.html(items.join(''));
+          },
+          error: function(error) {
+            console.log(error);
+          }
+        });
+      } else {
+        $searchResults.empty();
+      }
+    });
+
+    $searchResults.on('click', '.commander-item', function() {
+      var commanderName = $(this).data('name');
+
+      $.ajax({
+        url: '/add_commander',
+        type: 'POST',
+        contentType: 'application/json;charset=UTF-8',
+        data: JSON.stringify({ name: commanderName }),
+        headers: { 'X-CSRFToken': csrfToken },
+        success: function(response) {
+          alert('Commander added successfully!');
+          $searchResults.empty();
+        },
+        error: function(error) {
+          console.log(error);
+        }
+      });
+    });
+  });
+</script>
+<br>
+<h3>Current Roster</h3>
+<div class="commander-roster">
+    {% if commanders %}
+        {% for commander in commanders %}
+        <div class="commander">
+            <h4>{{ commander.name }}</h4>
+            <img src="{{ commander.image_url }}" alt="{{ commander.name }}" />
+            <!-- Add more commander details here if needed -->
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>You have no commanders in your roster.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
