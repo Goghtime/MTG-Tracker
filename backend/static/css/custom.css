@@ -1,0 +1,30 @@
+/* custom.css */
+
+/* Additional global styles */
+h2, h3 {
+    color: #ffffff;
+}
+
+/* Style for list items */
+.list-group-item {
+    background-color: #333;
+    border: none;
+}
+
+/* Button styling */
+.btn-danger {
+    background-color: #dc3545;
+}
+
+.btn-success {
+    background-color: #28a745;
+}
+
+/* Style adjustments for the navbar */
+.navbar-toggler {
+    border-color: rgba(255,255,255,.1);
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(255, 255, 255, 0.5)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}

@@ -9,8 +9,7 @@ Instance: /usr/src/app/instance
 >>> for user in users:
 ...     print(user.username, user.email)
 ... 
-mbonorand mbonorand@gmail.com
-mbonorand1 mbonorand1@gmail.com
+
 
 -----------------
 docker exec -it mt_mtg_tracker_backend_1 flask routes
@@ -24,3 +23,9 @@ logout       GET        /logout
 register     GET, POST  /register              
 set_session  GET        /set_session           
 static       GET        /static/<path:filename>
+
+
+
+flask db init  # Only if the migrations folder doesn't already exist
+flask db migrate -m "Initial migration"
+flask db upgrade

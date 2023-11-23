@@ -50,9 +50,11 @@ def logout():
 @app.route('/account')
 @login_required
 def account():
-    # Fetch commanders associated with the current user
-    commanders = Commander.query.filter_by(user_id=current_user.id).all()
-    return render_template('account.html', title='Account', commanders=commanders)
+    active_commanders = Commander.query.filter_by(user_id=current_user.id, active=True).all()
+    retired_commanders = Commander.query.filter_by(user_id=current_user.id, active=False).all()
+    return render_template('account.html', 
+                           active_commanders=active_commanders, 
+                           retired_commanders=retired_commanders)
 
 @app.route('/search_commanders', methods=['GET'])
 def search_commanders():
@@ -102,4 +104,17 @@ def delete_commander(commander_id):
         return jsonify({'message': 'Commander deleted successfully'}), 200
     else:
         flash('Commander not found or unauthorized', 'danger')
+    return redirect(url_for('account'))
+
+@app.route('/game_tracker')
+def game_tracker():
+    # Implement the logic for your 'Game Tracker' page here
+    return render_template('game_tracker.html')
+
+@app.route('/toggle_commander/<int:commander_id>', methods=['POST'])
+@login_required
+def toggle_commander(commander_id):
+    commander = Commander.query.get_or_404(commander_id)
+    commander.active = not commander.active  # Toggle the active status
+    db.session.commit()
     return redirect(url_for('account'))

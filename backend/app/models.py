@@ -24,6 +24,7 @@ class Commander(db.Model):
     name = db.Column(db.String(100), nullable=False)
     color_identity = db.Column(db.String(10))
     image_url = db.Column(db.String(255))
+    active = db.Column(db.Boolean, default=True)
 
     def __repr__(self):
         return f'<Commander {self.name}>'
