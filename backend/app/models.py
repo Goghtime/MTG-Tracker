@@ -7,6 +7,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    avatar = db.Column(db.String(255))
     commanders = db.relationship('Commander', backref='user', lazy='dynamic')
 
     def set_password(self, password):
@@ -22,8 +23,10 @@ class Commander(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     name = db.Column(db.String(100), nullable=False)
-    color_identity = db.Column(db.String(10))
+    color_identity = db.Column(db.String(20))
     image_url = db.Column(db.String(255))
+    mana_cost = db.Column(db.String(50))
+    cmc = db.Column(db.Integer)
     active = db.Column(db.Boolean, default=True)
 
     def __repr__(self):

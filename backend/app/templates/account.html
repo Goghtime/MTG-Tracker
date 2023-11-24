@@ -17,6 +17,9 @@
   <li class="nav-item">
     <a class="nav-link" id="delete-commander-tab" data-toggle="tab" href="#delete-commander">Delete Commander</a>
   </li>
+  <li class="nav-item">
+    <a class="nav-link" id="settings-tab" data-toggle="tab" href="#settings">Settings</a>
+  </li>
 </ul>
 
 <!-- Tab Content -->
@@ -85,6 +88,50 @@
       {% endfor %}
     </ul>
   </div>
+
+<!-- Settings Tab -->
+<div class="tab-pane fade" id="settings">
+  <h3 class="text-center my-3">Account Settings</h3>
+  <div class="row justify-content-center">
+      <!-- Password Update Form Column -->
+      <div class="col-md-6">
+          <form method="POST" action="{{ url_for('update_password') }}">
+              <div class="mb-3">
+                  <label for="currentPassword" class="form-label">Current Password</label>
+                  <input type="password" class="form-control" id="currentPassword" name="current_password" required>
+              </div>
+              <div class="mb-3">
+                  <label for="newPassword" class="form-label">New Password</label>
+                  <input type="password" class="form-control" id="newPassword" name="new_password" required>
+              </div>
+              <div class="mb-3">
+                  <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                  <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Update Password</button>
+          </form>
+      </div>
+
+<!-- Avatar Upload Column -->
+<div class="col-md-6 avatar-section">
+  <div class="current-avatar mb-3">
+      {% if current_user.avatar %}
+          <img src="{{ url_for('static', filename=current_user.avatar[8:]) }}" alt="User Avatar" class="avatar-img rounded-circle border">
+      {% else %}
+          <img src="{{ url_for('static', filename='uploads/default.png') }}" alt="User Avatar" class="avatar-img rounded-circle border"> 
+      {% endif %}
+  </div>
+  <form id="avatarUploadForm" method="POST" action="{{ url_for('upload_avatar') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+          <label for="avatar" class="form-label">Upload Avatar</label>
+          <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+      </div>
+      <button type="submit" class="btn btn-secondary">Upload Avatar</button>
+  </form>
+</div>
+<!-- Other column for password change... -->
+</div>
 </div>
 {% endblock %}
 
@@ -96,56 +143,66 @@
     var $searchResults = $('#search-results');
     var csrfToken = $('meta[name="csrf-token"]').attr('content');
 
-    $('#commander-search').on('input', function() {
-      var searchQuery = $(this).val();
-      if (searchQuery.length >= 3) {
+ // Commander Search Functionality
+ $('#commander-search').on('input', function() {
+    var searchQuery = $(this).val();
+    if (searchQuery.length >= 3) {
+        var scryfallApiUrl = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQuery)}+type:legendary+is:commander`;
+
         $.ajax({
-          url: '/search_commanders?q=' + encodeURIComponent(searchQuery),
-          type: 'GET',
-          success: function(data) {
-            var items = [];
-            $.each(data, function(i, commander) {
-              var imageUrl = commander.image_uris ? commander.image_uris.normal : 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/SNice.svg/1200px-SNice.svg.png';
-              items.push('<button type="button" class="commander-item" data-name="' + commander.name +
-                '" data-color-identity="' + commander.color_identity.join(', ') + 
-                '" data-image-url="' + imageUrl + '">' + 
-                commander.name + '</button>');
-            });
-            $searchResults.html(items.join(''));
-          },
-          error: function(error) {
-            console.log(error);
-          }
+            url: scryfallApiUrl,
+            type: 'GET',
+            success: function(data) {
+                var items = [];
+                data.data.forEach(function(card) {
+                    var name = card.name;
+                    var manaCost = card.mana_cost || '';
+                    var cmc = card.cmc || 0;
+                    var imageUrl = card.image_uris ? card.image_uris.normal : 'defaultImageUrl';
+                    var colorIdentity = card.color_identity.join(', ') || '';
+
+                    items.push(`<button type="button" class="commander-item" data-name="${name}" data-mana-cost="${manaCost}" data-image-url="${imageUrl}" data-cmc="${cmc}" data-color-identity="${colorIdentity}">${name}</button>`);
+                });
+                $searchResults.html(items.join(''));
+            },
+            error: function(error) {
+                console.log(error);
+            }
         });
-      } else {
+    } else {
         $searchResults.empty();
-      }
-    });
+    }
+});
 
+    // Commander Add Functionality
     $searchResults.on('click', '.commander-item', function() {
-      var commanderName = $(this).data('name');
-      var commanderColorIdentity = $(this).data('color-identity');
-      var commanderImageUrl = $(this).data('image-url');
+    var commanderName = $(this).data('name');
+    var commanderColorIdentity = $(this).data('color-identity');
+    var commanderImageUrl = $(this).data('image-url');
+    var commanderManaCost = $(this).data('mana-cost');
+    var commanderCmc = $(this).data('cmc');
 
-      $.ajax({
+    $.ajax({
         url: '/add_commander',
         type: 'POST',
         contentType: 'application/json;charset=UTF-8',
         data: JSON.stringify({ 
-          name: commanderName,
-          color_identity: commanderColorIdentity,
-          image_url: commanderImageUrl
+            name: commanderName,
+            color_identity: commanderColorIdentity,
+            image_url: commanderImageUrl,
+            mana_cost: commanderManaCost,
+            cmc: commanderCmc
         }),
         headers: { 'X-CSRFToken': csrfToken },
         success: function(response) {
-          alert('Commander added successfully!');
-          $searchResults.empty();
+            alert('Commander added successfully!');
+            window.location.reload(); // Reload the page
         },
         error: function(error) {
-          console.log(error);
+            console.log(error);
         }
-      });
     });
+});
   });
 
   function toggleCommanderStatus(commanderId) {
@@ -192,4 +249,30 @@
     });
   });
 </script>
+
+<script>
+  $(document).ready(function() {
+      $('#avatarUploadForm').submit(function(e) {
+          e.preventDefault(); // Prevent the default form submission
+  
+          $.ajax({
+              url: '/upload_avatar',
+              type: 'POST',
+              data: new FormData(this),
+              processData: false,
+              contentType: false,
+              beforeSend: function(xhr) {
+                  xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token() }}');
+              },
+              success: function(response) {
+                  // Handle success - e.g., show a message, redirect, etc.
+              },
+              error: function(error) {
+                  // Handle error - e.g., display error message
+              }
+          });
+      });
+  });
+  </script>
+  
 {% endblock %}

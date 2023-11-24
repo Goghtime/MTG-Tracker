@@ -7,6 +7,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import logging
 from flask import jsonify
+from werkzeug.utils import secure_filename
+import os
 
 
 @app.route('/')
@@ -72,17 +74,15 @@ def search_commanders():
 def add_commander():
     try:
         data = request.get_json()
-        logging.info("Received data:", data)
 
-        if not data or 'name' not in data:
-            return jsonify({'error': 'Missing commander name'}), 400
-
-        # Creating a new Commander instance
         new_commander = Commander(
-            user_id=current_user.id,  # Link to the current logged-in user
+            user_id=current_user.id,
             name=data['name'],
-            color_identity=data.get('color_identity', ''),  # Get color identity if provided
-            image_url=data.get('image_url', '')  # Get image URL if provided
+            color_identity=data['color_identity'],
+            image_url=data['image_url'],
+            mana_cost=data['mana_cost'],  # Ensure this field exists in your Commander model
+            cmc=data['cmc'],             # Ensure this field exists in your Commander model
+            active=True
         )
         db.session.add(new_commander)
         db.session.commit()
@@ -94,6 +94,7 @@ def add_commander():
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/delete_commander/<int:commander_id>', methods=['POST'])
 @login_required
@@ -120,3 +121,58 @@ def toggle_commander(commander_id):
     commander.active = not commander.active  # Toggle the active status
     db.session.commit()
     return redirect(url_for('account'))
+
+@app.route('/update_password', methods=['POST'])
+@login_required
+def update_password():
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    user = User.query.filter_by(id=current_user.id).first()
+
+    if not user or not check_password_hash(user.password_hash, current_password):
+        flash('Current password is incorrect.', 'danger')
+        return redirect(url_for('account'))
+
+    if new_password != confirm_password:
+        flash('New passwords do not match.', 'danger')
+        return redirect(url_for('account'))
+
+    # Update password
+    user.password_hash = generate_password_hash(new_password)
+    db.session.commit()
+    flash('Password updated successfully.', 'success')
+
+    return redirect(url_for('account'))
+
+@app.route('/upload_avatar', methods=['POST'])
+def upload_avatar():
+    if 'avatar' not in request.files:
+        flash('No file part', 'error')
+        return redirect(url_for('account'))
+    
+    file = request.files['avatar']
+    if file.filename == '':
+        flash('No selected file', 'error')
+        return redirect(url_for('account'))
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        # Here, update the user's avatar in the database
+        current_user.avatar = file_path
+        db.session.commit()
+
+        flash('Avatar uploaded successfully', 'success')
+        return redirect(url_for('account'))
+
+    flash('Invalid file format', 'error')
+    return redirect(url_for('account'))
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

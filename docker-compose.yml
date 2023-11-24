@@ -18,6 +18,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/backend
+      - ./static:/static
+      - ./migrations:/usr/src/app/migrations
     ports:
       - "5000:5000"
     environment:
