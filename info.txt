@@ -29,3 +29,43 @@ static       GET        /static/<path:filename>
 flask db init  # Only if the migrations folder doesn't already exist
 flask db migrate -m "Initial migration"
 flask db upgrade
+
+
+
+Choose a Background  -> you can only select enchantments with the "background" subtype
+Partner (you can have two commanders if both have partner.)  --> you can only select another commander with partner
+Partner with * (When this creature enters the battlefield, target player may put * into their hand from their library, then shuffle.)
+Doctor’s companion (You can have two commanders if the other is the Doctor.)
+
+
+Your proposed idea is a good starting point for handling special commander mechanics like "Choose a Background", "Partner", "Partner with", and unique cases like "Doctor’s companion". Here are some suggestions to refine and implement this concept:
+
+Database Design:
+Commander Table: Include fields to identify special mechanics. For example:
+
+has_partner: Boolean indicating whether the commander has the "Partner" mechanic.
+partner_with: String field to store the specific name of the partner if the commander has "Partner with" mechanic.
+is_background_compatible: Boolean indicating if the commander can be paired with a background.
+is_doctors_companion: Boolean for the specific "Doctor’s companion" case.
+Deck Table: This table should have the ability to link to one or two commanders and optionally a background. This can be done with foreign keys or a many-to-many relationship, depending on your design preference.
+
+Application Logic:
+Adding Commanders to a Deck:
+
+When a commander is added, check its special mechanics.
+If the commander has a partner mechanic, enable a dropdown to select the second commander. Ensure only commanders with the "Partner" mechanic are selectable. For "Partner with", you could pre-populate or suggest the specific partner.
+If the commander is compatible with a background, enable a dropdown to select a background. Ensure only enchantments with the "background" subtype are selectable.
+Deck Validation:
+
+Ensure that the combination of commanders and/or background is valid according to MTG rules.
+In the case of "Partner with", ensure that the specific pair is correctly matched.
+UI Considerations:
+
+Clearly indicate the special mechanics of a commander and provide appropriate UI elements (like dropdowns) for additional selections.
+Use visual cues to distinguish between different types of pairings (Commander/Background, Partner, etc.).
+Improving the Idea:
+Automated Suggestions: When a user selects a commander with "Partner with", automatically suggest or pre-fill the partner commander.
+Dynamic Search Filters: When searching for a second commander or a background, dynamically adjust the search filters based on the first commander's mechanics.
+UI Feedback: Provide immediate feedback in the UI if a selected combination is not valid according to MTG rules.
+Flexibility for Future Mechanics: Design your database and application logic in a way that new mechanics can be easily added in the future.
+By implementing these features, you'll provide a user-friendly and rule-compliant way for players to build their decks with various commander mechanics. This approach also ensures that your application remains adaptable for any new mechanics introduced in future MTG sets.

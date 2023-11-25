@@ -75,26 +75,42 @@ def add_commander():
     try:
         data = request.get_json()
 
+        # Create and add new commander
         new_commander = Commander(
             user_id=current_user.id,
             name=data['name'],
             color_identity=data['color_identity'],
             image_url=data['image_url'],
-            mana_cost=data['mana_cost'],  # Ensure this field exists in your Commander model
-            cmc=data['cmc'],             # Ensure this field exists in your Commander model
+            mana_cost=data['mana_cost'],
+            cmc=data['cmc'],
             active=True
         )
         db.session.add(new_commander)
+        db.session.flush()  # Assigns an ID to new_commander
+
+        # Check if a background is provided and add to Deck
+        if 'background' in data and data['background']:
+            new_deck_entry = Deck(
+                user_id=current_user.id,
+                commander_id=new_commander.id,
+                background_name=data['background']['name'],
+                background_mana_cost=data['background'].get('mana_cost', ''),
+                background_cmc=data['background'].get('cmc', None),
+                background_image_url=data['background'].get('image_url', '')
+            )
+            db.session.add(new_deck_entry)
+
         db.session.commit()
 
-        return jsonify({'message': 'Commander added successfully'}), 201
+        return jsonify({'message': 'Commander (and background) added successfully'}), 201
 
     except KeyError as e:
+        db.session.rollback()
         return jsonify({'error': f'Missing data for {e.args[0]}'}), 400
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/delete_commander/<int:commander_id>', methods=['POST'])
 @login_required

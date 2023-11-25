@@ -9,6 +9,9 @@
 <!-- Tab Navigation -->
 <ul class="nav nav-tabs justify-content-center" id="accountTabs">
   <li class="nav-item">
+    <a class="nav-link" id="add-commanders-tab" data-toggle="tab" href="#add-commanders">Add Commanders</a>
+  </li>
+  <li class="nav-item">
     <a class="nav-link active" id="active-roster-tab" data-toggle="tab" href="#active-roster">Active Roster</a>
   </li>
   <li class="nav-item">
@@ -24,16 +27,36 @@
 
 <!-- Tab Content -->
 <div class="tab-content">
+ <!-- Add Commanders Tab -->
+<div class="tab-pane fade" id="add-commanders">
+  <h3 class="text-center my-3">Add Commanders</h3>
+  
+  <!-- Commander Search Section -->
+  <div class="commander-search text-center">
+      <input type="text" id="commander-search-add" class="form-control mb-3 w-50 mx-auto" placeholder="Search for a commander...">
+      <div id="search-results-add"></div>
+  </div>
+
+  <!-- Background Selection Section -->
+  <div class="background-selection text-center" style="display: none;">
+      <select id="backgroundSelection" class="form-control mb-3">
+          <!-- Background options will be populated here -->
+      </select>
+  </div>
+
+  <!-- Submit Section -->
+  <div class="commander-submit text-center">
+      <button type="button" class="btn btn-primary" onclick="submitCommander()">Add Commander</button>
+  </div>
+</div>
+  
   <!-- Active Roster -->
   <div class="tab-pane fade show active" id="active-roster">
     <h3 class="text-center my-3">Active Roster</h3>
-    <div class="commander-search text-center">
-      <input type="text" id="commander-search" class="form-control mb-3 w-50 mx-auto" placeholder="Search for a commander...">
-      <div id="search-results"></div>
-    </div>
     <ul class="list-group mb-4">
       {% for commander in active_commanders %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
+      <li
+        class="list-group-item d-flex justify-content-between align-items-center">
         <div>
           <strong>{{ commander.name }}</strong>
           <div>Color Identity: {{ commander.color_identity }}</div>
@@ -42,20 +65,21 @@
         <div>
           Wins: {{ commander.wins }} | Losses: {{ commander.losses }}
         </div>
-        <button type="button" class="btn btn-danger" onclick="toggleCommanderStatus({{ commander.id }}, false)">Retire</button>
+        <button type="button" class="btn btn-danger"
+          onclick="toggleCommanderStatus({{ commander.id }}, false)">Retire</button>
       </li>
       {% else %}
       <p class="text-center">No active commanders in your roster.</p>
       {% endfor %}
     </ul>
   </div>
-
   <!-- Retired Roster -->
   <div class="tab-pane fade" id="retired-roster">
     <h3 class="text-center my-3">Retired Roster</h3>
     <ul class="list-group mb-4">
       {% for commander in retired_commanders %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
+      <li
+        class="list-group-item d-flex justify-content-between align-items-center">
         <div>
           <strong>{{ commander.name }}</strong>
           <div>Color Identity: {{ commander.color_identity }}</div>
@@ -64,7 +88,8 @@
         <div>
           Wins: {{ commander.wins }} | Losses: {{ commander.losses }}
         </div>
-        <button type="button" class="btn btn-success" onclick="toggleCommanderStatus({{ commander.id }}, true)">Reactivate</button>
+        <button type="button" class="btn btn-success"
+          onclick="toggleCommanderStatus({{ commander.id }}, true)">Reactivate</button>
       </li>
       {% else %}
       <p class="text-center">No retired commanders in your roster.</p>
@@ -77,202 +102,262 @@
     <h3 class="text-center my-3">Delete Commander</h3>
     <ul class="list-group mb-4">
       {% for commander in commanders %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
+      <li
+        class="list-group-item d-flex justify-content-between align-items-center">
         <div>
           <strong>{{ commander.name }}</strong>
           <div>Color Identity: {{ commander.color_identity }}</div>
           <div>Mana Cost: {{ commander.mana_cost }}</div>
         </div>
-        <button type="button" class="btn btn-danger" onclick="deleteCommander({{ commander.id }})">Delete</button>
+        <button type="button" class="btn btn-danger"
+          onclick="deleteCommander({{ commander.id }})">Delete</button>
       </li>
       {% endfor %}
     </ul>
   </div>
 
-<!-- Settings Tab -->
-<div class="tab-pane fade" id="settings">
-  <h3 class="text-center my-3">Account Settings</h3>
-  <div class="row justify-content-center">
+  <!-- Settings Tab -->
+  <div class="tab-pane fade" id="settings">
+    <h3 class="text-center my-3">Account Settings</h3>
+    <div class="row justify-content-center">
       <!-- Password Update Form Column -->
       <div class="col-md-6">
-          <form method="POST" action="{{ url_for('update_password') }}">
-              <div class="mb-3">
-                  <label for="currentPassword" class="form-label">Current Password</label>
-                  <input type="password" class="form-control" id="currentPassword" name="current_password" required>
-              </div>
-              <div class="mb-3">
-                  <label for="newPassword" class="form-label">New Password</label>
-                  <input type="password" class="form-control" id="newPassword" name="new_password" required>
-              </div>
-              <div class="mb-3">
-                  <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                  <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
-              </div>
-              <button type="submit" class="btn btn-primary">Update Password</button>
-          </form>
+        <form method="POST" action="{{ url_for('update_password') }}">
+          <div class="mb-3">
+            <label for="currentPassword" class="form-label">Current Password</label>
+            <input type="password" class="form-control" id="currentPassword"
+              name="current_password" required>
+          </div>
+          <div class="mb-3">
+            <label for="newPassword" class="form-label">New Password</label>
+            <input type="password" class="form-control" id="newPassword"
+              name="new_password" required>
+          </div>
+          <div class="mb-3">
+            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+            <input type="password" class="form-control" id="confirmPassword"
+              name="confirm_password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Update Password</button>
+        </form>
       </div>
-
-<!-- Avatar Upload Column -->
-<div class="col-md-6 avatar-section">
-  <div class="current-avatar mb-3">
-      {% if current_user.avatar %}
-          <img src="{{ url_for('static', filename=current_user.avatar[8:]) }}" alt="User Avatar" class="avatar-img rounded-circle border">
-      {% else %}
-          <img src="{{ url_for('static', filename='uploads/default.png') }}" alt="User Avatar" class="avatar-img rounded-circle border"> 
-      {% endif %}
+      <!-- Avatar Upload Column -->
+      <div class="col-md-6 avatar-section">
+        <div class="current-avatar mb-3">
+          {% if current_user.avatar %}
+          <img src="{{ url_for('static', filename=current_user.avatar[8:]) }}"
+            alt="User Avatar" class="avatar-img rounded-circle border">
+          {% else %}
+          <img src="{{ url_for('static', filename='uploads/default.png') }}"
+            alt="User Avatar" class="avatar-img rounded-circle border">
+          {% endif %}
+        </div>
+        <form id="avatarUploadForm" method="POST"
+          action="{{ url_for('upload_avatar') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label for="avatar" class="form-label">Upload Avatar</label>
+            <input type="file" class="form-control" id="avatar" name="avatar"
+              accept="image/*">
+          </div>
+          <button type="submit" class="btn btn-secondary">Upload Avatar</button>
+        </form>
+      </div>
+      <!-- Other column for password change... -->
+    </div>
   </div>
-  <form id="avatarUploadForm" method="POST" action="{{ url_for('upload_avatar') }}" enctype="multipart/form-data">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="mb-3">
-          <label for="avatar" class="form-label">Upload Avatar</label>
-          <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
-      </div>
-      <button type="submit" class="btn btn-secondary">Upload Avatar</button>
-  </form>
-</div>
-<!-- Other column for password change... -->
-</div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
+
 <script>
+  // Global variables
+  var selectedCommanderData = null;
+  var allBackgrounds = {}; 
+  var csrfToken = $('meta[name="csrf-token"]').attr('content');
+
   $(document).ready(function() {
-    var $searchResults = $('#search-results');
-    var csrfToken = $('meta[name="csrf-token"]').attr('content');
+      var $searchResultsAdd = $('#search-results-add');
 
- // Commander Search Functionality
- $('#commander-search').on('input', function() {
-    var searchQuery = $(this).val();
-    if (searchQuery.length >= 3) {
-        var scryfallApiUrl = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQuery)}+type:legendary+is:commander`;
+      // Commander Search Functionality for Adding Commanders
+      $('#commander-search-add').on('input', function() {
+        $('.background-selection').hide();
+        $('#backgroundSelection').empty().append($('<option>', {
+          value: '',
+          text: 'Select a background',
+          disabled: true,
+          selected: true
+        }));
 
-        $.ajax({
-            url: scryfallApiUrl,
-            type: 'GET',
-            success: function(data) {
-                var items = [];
-                data.data.forEach(function(card) {
-                    var name = card.name;
-                    var manaCost = card.mana_cost || '';
-                    var cmc = card.cmc || 0;
-                    var imageUrl = card.image_uris ? card.image_uris.normal : 'defaultImageUrl';
-                    var colorIdentity = card.color_identity.join(', ') || '';
+        var searchQuery = $(this).val();
+        if (searchQuery.length >= 3) {
+          var scryfallApiUrl = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQuery)}+type:legendary+is:commander`;
 
-                    items.push(`<button type="button" class="commander-item" data-name="${name}" data-mana-cost="${manaCost}" data-image-url="${imageUrl}" data-cmc="${cmc}" data-color-identity="${colorIdentity}">${name}</button>`);
-                });
-                $searchResults.html(items.join(''));
-            },
-            error: function(error) {
-                console.log(error);
-            }
-        });
-    } else {
-        $searchResults.empty();
-    }
-});
+          $.ajax({
+              url: scryfallApiUrl,
+              type: 'GET',
+              success: function(data) {
+                  var items = [];
+                  data.data.forEach(function(card) {
+                      var name = card.name;
+                      var manaCost = card.mana_cost || '';
+                      var cmc = card.cmc || 0;
+                      var imageUrl = card.image_uris ? card.image_uris.normal : 'defaultImageUrl';
+                      var colorIdentity = card.color_identity.join(', ') || '';
+                      var canHaveBackground = Array.isArray(card.keywords) && card.keywords.includes("Choose a background");
 
-    // Commander Add Functionality
-    $searchResults.on('click', '.commander-item', function() {
-    var commanderName = $(this).data('name');
-    var commanderColorIdentity = $(this).data('color-identity');
-    var commanderImageUrl = $(this).data('image-url');
-    var commanderManaCost = $(this).data('mana-cost');
-    var commanderCmc = $(this).data('cmc');
-
-    $.ajax({
-        url: '/add_commander',
-        type: 'POST',
-        contentType: 'application/json;charset=UTF-8',
-        data: JSON.stringify({ 
-            name: commanderName,
-            color_identity: commanderColorIdentity,
-            image_url: commanderImageUrl,
-            mana_cost: commanderManaCost,
-            cmc: commanderCmc
-        }),
-        headers: { 'X-CSRFToken': csrfToken },
-        success: function(response) {
-            alert('Commander added successfully!');
-            window.location.reload(); // Reload the page
-        },
-        error: function(error) {
-            console.log(error);
+                      items.push(`<button type="button" class="commander-item" 
+                      data-name="${name}" 
+                      data-color-identity="${colorIdentity}" 
+                      data-image-url="${imageUrl}" 
+                      data-mana-cost="${manaCost}" 
+                      data-cmc="${cmc}"
+                      data-can-have-background="${canHaveBackground}"
+                      >${name}</button>`);
+                  });
+                  $searchResultsAdd.html(items.join(''));
+              },
+              error: function(error) {
+                  console.log(error);
+              }
+          });
+        } else {
+          $searchResultsAdd.empty();
         }
-    });
-});
+      });
+
+      // Commander Item Click Handling
+      $searchResultsAdd.on('click', '.commander-item', function() {
+          selectedCommanderData = {
+              name: $(this).data('name'),
+              color_identity: $(this).data('color-identity'),
+              image_url: $(this).data('image-url'),
+              mana_cost: $(this).data('mana-cost'),
+              cmc: $(this).data('cmc')
+          };
+
+          if ($(this).data('can-have-background')) {
+              $('.background-selection').show();
+              populateBackgroundOptions();
+          } else {
+              addCommanderToRoster(selectedCommanderData, null);
+          }
+      });
+
+      // Populate Background Options
+      function populateBackgroundOptions() {
+          var scryfallBackgroundApiUrl = `https://api.scryfall.com/cards/search?q=type:background`;
+          
+          // AJAX call to get backgrounds from Scryfall API
+          $.ajax({
+              url: scryfallBackgroundApiUrl,
+              type: 'GET',
+              success: function(data) {
+                  $('#backgroundSelection').empty();
+                  $('#backgroundSelection').append($('<option>', {
+                      value: '',
+                      text: 'Select a background',
+                      disabled: true,
+                      selected: true
+                  }));
+
+                  data.data.forEach(function(background) {
+                      $('#backgroundSelection').append($('<option>', {
+                          value: background.name,
+                          text: background.name
+                      }));
+                      allBackgrounds[background.name] = {
+                      image_url: background.image_uris.normal,
+                      mana_cost: background.mana_cost,
+                      cmc: background.cmc
+                      };
+                  });
+              },
+              error: function(error) {
+                  console.error('Error fetching backgrounds:', error);
+              }
+          });
+      }
+
+      // Submit Commander
+      function submitCommander() {
+          var backgroundName = $('#backgroundSelection').val();
+
+          if (!selectedCommanderData) {
+              alert('Please select a commander');
+              return;
+          }
+
+          // Retrieve background details from allBackgrounds, excluding color_identity
+        var backgroundDetails = backgroundName ? {
+        name: backgroundName,
+        mana_cost: allBackgrounds[backgroundName].mana_cost,
+        cmc: allBackgrounds[backgroundName].cmc,
+        image_url: allBackgrounds[backgroundName].image_url
+        } : null;
+
+        var commanderData = {
+        ...selectedCommanderData, // Include all commander data
+        background: backgroundDetails
+    };
+
+    addCommanderToRoster(commanderData);
+}
+
+      // Add Commander to Roster
+      function addCommanderToRoster(commanderData) {
+          console.log("Adding Commander to Roster", commanderData);
+          
+          $.ajax({
+              url: '/add_commander',
+              type: 'POST',
+              contentType: 'application/json',
+              data: JSON.stringify(commanderData),
+              headers: { 'X-CSRFToken': csrfToken },
+              success: function(response) {
+                  console.log("Commander added:", response);
+                  window.location.reload();
+              },
+              error: function(error) {
+                  console.error("Error adding commander:", error);
+              }
+          });
+      }
   });
 
-  function toggleCommanderStatus(commanderId) {
-    var csrfToken = '{{ csrf_token() }}'; // Get the CSRF token
-    $.ajax({
-      url: '/toggle_commander/' + commanderId,
-      type: 'POST',
-      headers: { 'X-CSRFToken': csrfToken }, // Include CSRF token
-      success: function(response) {
-        alert('Commander status toggled successfully!');
-        location.reload(); // Reload the page
-      },
-      error: function(error) {
-        console.log('Error toggling commander status:', error);
-      }
-    });
-  }
-
-  function deleteCommander(commanderId) {
-    var csrfToken = '{{ csrf_token() }}'; // Get the CSRF token
-    $.ajax({
-      url: '/delete_commander/' + commanderId,
-      type: 'POST',
-      headers: { 'X-CSRFToken': csrfToken }, // Include CSRF token
-      success: function(response) {
-        alert('Commander deleted successfully!');
-        location.reload(); // Reload the page
-      },
-      error: function(error) {
-        console.log('Error deleting commander:', error);
-      }
-    });
-  }
-</script>
-
-<script>
+  // Tab Switch Handler
   $(document).ready(function() {
-    // Existing JavaScript code for commander search and actions
-
-    // Tab switch handler
     $('#accountTabs a').on('click', function (e) {
       e.preventDefault();
       $(this).tab('show');
     });
   });
-</script>
 
-<script>
+  // Avatar Upload Handling
   $(document).ready(function() {
-      $('#avatarUploadForm').submit(function(e) {
-          e.preventDefault(); // Prevent the default form submission
-  
-          $.ajax({
-              url: '/upload_avatar',
-              type: 'POST',
-              data: new FormData(this),
-              processData: false,
-              contentType: false,
-              beforeSend: function(xhr) {
-                  xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token() }}');
-              },
-              success: function(response) {
-                  // Handle success - e.g., show a message, redirect, etc.
-              },
-              error: function(error) {
-                  // Handle error - e.g., display error message
-              }
-          });
-      });
+    $('#avatarUploadForm').submit(function(e) {
+        e.preventDefault();
+
+        $.ajax({
+            url: '/upload_avatar',
+            type: 'POST',
+            data: new FormData(this),
+            processData: false,
+            contentType: false,
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token() }}');
+            },
+            success: function(response) {
+                alert('Avatar updated successfully!');
+                window.location.reload();
+            },
+            error: function(error) {
+                console.error('Error uploading avatar:', error);
+            }
+        });
+    });
   });
-  </script>
-  
+</script>
 {% endblock %}

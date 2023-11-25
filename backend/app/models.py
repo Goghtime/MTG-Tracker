@@ -1,6 +1,7 @@
 from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -28,6 +29,28 @@ class Commander(db.Model):
     mana_cost = db.Column(db.String(50))
     cmc = db.Column(db.Integer)
     active = db.Column(db.Boolean, default=True)
+    can_have_background = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f'<Commander {self.name}>'
+
+class Deck(db.Model):
+    __tablename__ = 'deck'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    commander_id = db.Column(db.Integer, db.ForeignKey('commander.id'), nullable=False)
+
+    # Background related fields
+    background_name = db.Column(db.String(100), nullable=True)
+    background_mana_cost = db.Column(db.String(50), nullable=True)
+    background_cmc = db.Column(db.Integer, nullable=True)
+    background_image_url = db.Column(db.String(255), nullable=True)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('decks', lazy=True))
+    commander = db.relationship('Commander', backref=db.backref('decks', lazy=True))
+
+    def __repr__(self):
+        return f'<Deck User: {self.user_id}, Commander: {self.commander_id}, Background: {self.background_name}>'
+
