@@ -1,6 +1,6 @@
 from flask import render_template, redirect, url_for, flash, request, jsonify
 from app import app, db
-from app.models import User, Commander
+from app.models import User, Commander, Deck
 from app.forms import LoginForm, RegistrationForm
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -83,12 +83,14 @@ def add_commander():
             image_url=data['image_url'],
             mana_cost=data['mana_cost'],
             cmc=data['cmc'],
-            active=True
+            active=True,
+            can_have_background=data.get('can_have_background', False),
+            can_have_partner=data.get('can_have_partner', False)  # Assuming the frontend sends this data
         )
         db.session.add(new_commander)
         db.session.flush()  # Assigns an ID to new_commander
 
-        # Check if a background is provided and add to Deck
+        # Check if a background or partner is provided and add to Deck
         if 'background' in data and data['background']:
             new_deck_entry = Deck(
                 user_id=current_user.id,
@@ -99,10 +101,20 @@ def add_commander():
                 background_image_url=data['background'].get('image_url', '')
             )
             db.session.add(new_deck_entry)
+        elif 'partner' in data and data['partner']:
+            new_deck_entry = Deck(
+                user_id=current_user.id,
+                commander_id=new_commander.id,
+                partner_name=data['partner']['name'],
+                partner_mana_cost=data['partner'].get('mana_cost', ''),
+                partner_cmc=data['partner'].get('cmc', None),
+                partner_image_url=data['partner'].get('image_url', '')
+            )
+            db.session.add(new_deck_entry)
 
         db.session.commit()
 
-        return jsonify({'message': 'Commander (and background) added successfully'}), 201
+        return jsonify({'message': 'Commander added successfully'}), 201
 
     except KeyError as e:
         db.session.rollback()

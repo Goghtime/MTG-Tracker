@@ -44,9 +44,17 @@
       </select>
   </div>
 
+  <!-- Partner Selection Section -->
+<div class="partner-selection text-center" style="display: none;">
+  <select id="partnerSelection" class="form-control mb-3">
+      <!-- Partner options will be populated here -->
+  </select>
+</div>
+
+
   <!-- Submit Section -->
   <div class="commander-submit text-center">
-      <button type="button" class="btn btn-primary" onclick="submitCommander()">Add Commander</button>
+    <button type="button" class="btn btn-primary" id="addCommanderButton">Add Commander</button>
   </div>
 </div>
   
@@ -176,187 +184,293 @@
   // Global variables
   var selectedCommanderData = null;
   var allBackgrounds = {}; 
+  var allPartners = {};
   var csrfToken = $('meta[name="csrf-token"]').attr('content');
 
   $(document).ready(function() {
-      var $searchResultsAdd = $('#search-results-add');
+    var $searchResultsAdd = $('#search-results-add');
 
-      // Commander Search Functionality for Adding Commanders
-      $('#commander-search-add').on('input', function() {
-        $('.background-selection').hide();
-        $('#backgroundSelection').empty().append($('<option>', {
-          value: '',
-          text: 'Select a background',
-          disabled: true,
-          selected: true
-        }));
+    $('#addCommanderButton').on('click', function() {
+      submitCommander();
+    });
 
-        var searchQuery = $(this).val();
-        if (searchQuery.length >= 3) {
-          var scryfallApiUrl = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQuery)}+type:legendary+is:commander`;
+    // Commander Search Functionality for Adding Commanders
+    $('#commander-search-add').on('input', function() {
+      $('.background-selection').hide();
+      $('#backgroundSelection').empty().append($('<option>', {
+        value: '',
+        text: 'Select a background',
+        disabled: true,
+        selected: true
+      }));
 
-          $.ajax({
-              url: scryfallApiUrl,
-              type: 'GET',
-              success: function(data) {
-                  var items = [];
-                  data.data.forEach(function(card) {
-                      var name = card.name;
-                      var manaCost = card.mana_cost || '';
-                      var cmc = card.cmc || 0;
-                      var imageUrl = card.image_uris ? card.image_uris.normal : 'defaultImageUrl';
-                      var colorIdentity = card.color_identity.join(', ') || '';
-                      var canHaveBackground = Array.isArray(card.keywords) && card.keywords.includes("Choose a background");
+      var searchQuery = $(this).val();
+      if (searchQuery.length >= 3) {
+        var scryfallApiUrl = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchQuery)}+type:legendary+is:commander`;
+        console.log("Searching for commanders with query:", searchQuery); // Debugging
 
-                      items.push(`<button type="button" class="commander-item" 
-                      data-name="${name}" 
-                      data-color-identity="${colorIdentity}" 
-                      data-image-url="${imageUrl}" 
-                      data-mana-cost="${manaCost}" 
-                      data-cmc="${cmc}"
-                      data-can-have-background="${canHaveBackground}"
-                      >${name}</button>`);
-                  });
-                  $searchResultsAdd.html(items.join(''));
-              },
-              error: function(error) {
-                  console.log(error);
-              }
+        $.ajax({
+          url: scryfallApiUrl,
+          type: 'GET',
+          success: function(data) {
+            var items = [];
+            console.log("Commanders fetched:", data); // Debugging
+            data.data.forEach(function(card) {
+              var hasPartnerWith = card.keywords.includes("Partner with");
+              var partnerWithName = hasPartnerWith ? extractPartnerName(card.all_parts, card.name) : "";
+              var canHavePartner = card.keywords.includes("Partner") && !hasPartnerWith;
+
+              items.push(`<button type="button" class="commander-item" 
+              data-id="${card.id}"
+              data-all-parts='${JSON.stringify(card.all_parts || [])}'
+              data-oracle-text="${card.oracle_text || ''}"
+              data-name="${card.name}" 
+              data-color-identity="${card.color_identity.join(', ')}" 
+              data-image-url="${card.image_uris ? card.image_uris.normal : 'defaultImageUrl'}" 
+              data-mana-cost="${card.mana_cost || ''}" 
+              data-cmc="${card.cmc || 0}"
+              data-can-have-background="${Array.isArray(card.keywords) && card.keywords.includes("Choose a background")}"
+              data-can-have-partner="${canHavePartner}"
+              data-can-have-partner-with="${hasPartnerWith}"
+              data-partner-with-name="${partnerWithName}"
+              >${card.name}</button>`);
+            });
+            $searchResultsAdd.html(items.join(''));
+          },
+          error: function(error) {
+            console.log("Error fetching commanders:", error); // Debugging
+          }
+        });
+      } else {
+        $searchResultsAdd.empty();
+      }
+    });
+
+    function extractPartnerName(allParts, cardName) {
+      console.log("Extracting partner name for:", cardName, "from:", allParts); // Debugging
+      if (!allParts || allParts.length === 0) return "";
+
+      let partnerCard = allParts.find(part => 
+        part.component === "combo_piece" && 
+        part.name !== cardName &&
+        !part.type_line.includes("Emblem")
+      );
+
+      return partnerCard ? partnerCard.name : "";
+    }
+
+    // Commander Item Click Handling
+    $searchResultsAdd.on('click', '.commander-item', function() {
+      console.log("Commander item clicked. Data:", $(this).data()); // Debugging
+      selectedCommanderData = {
+        name: $(this).data('name'),
+        color_identity: $(this).data('color-identity'),
+        image_url: $(this).data('image-url'),
+        mana_cost: $(this).data('mana-cost'),
+        cmc: $(this).data('cmc'),
+        can_have_partner: $(this).data('can-have-partner'),
+        can_have_background: $(this).data('can-have-background'),
+        can_have_partner_with: $(this).data('can-have-partner-with'),
+        partner_with_name: extractPartnerName($(this).data('all-parts'), $(this).data('name')),
+        id: $(this).data('id')
+      };
+
+      $('.background-selection, .partner-selection').hide();
+
+      if (selectedCommanderData.can_have_background) {
+        $('.background-selection').show();
+        populateBackgroundOptions();
+      } else if (selectedCommanderData.can_have_partner) {
+        $('.partner-selection').show();
+        populatePartnerOptions();
+      } else if (selectedCommanderData.can_have_partner_with) {
+        $('.partner-selection').show();
+        populatePartnerWithNameOption(selectedCommanderData.partner_with_name);
+      } else {
+        addCommanderToRoster(selectedCommanderData, null);
+      }
+    });
+    function populatePartnerOptions() {
+      var scryfallPartnerApiUrl = `https://api.scryfall.com/cards/search?q=type:legendary+keyword:partner+-o:/partner%20with/`;
+      console.log("Fetching partners from:", scryfallPartnerApiUrl); // Debugging
+
+      $.ajax({
+        url: scryfallPartnerApiUrl,
+        type: 'GET',
+        success: function(data) {
+          $('#partnerSelection').empty();
+          $('#partnerSelection').append($('<option>', {
+            value: '',
+            text: 'Select a partner',
+            disabled: true,
+            selected: true
+          }));
+
+          data.data.forEach(function(partner) {
+            if(partner.keywords.includes("Partner") && !partner.oracle_text.includes("partner with")) {
+              $('#partnerSelection').append($('<option>', {
+                value: partner.name,
+                text: partner.name
+              }));
+
+              allPartners[partner.name] = {
+                image_url: partner.image_uris ? partner.image_uris.normal : 'defaultPartnerImageUrl',
+                mana_cost: partner.mana_cost,
+                cmc: partner.cmc
+              };
+            }
           });
-        } else {
-          $searchResultsAdd.empty();
+          console.log("Partners loaded:", data); // Debugging
+        },
+        error: function(error) {
+          console.error('Error fetching partners:', error); // Debugging
         }
       });
+    }
 
-      // Commander Item Click Handling
-      $searchResultsAdd.on('click', '.commander-item', function() {
-          selectedCommanderData = {
-              name: $(this).data('name'),
-              color_identity: $(this).data('color-identity'),
-              image_url: $(this).data('image-url'),
-              mana_cost: $(this).data('mana-cost'),
-              cmc: $(this).data('cmc')
-          };
+    function populatePartnerWithNameOption(partnerWithName) {
+      if (!partnerWithName) {
+        $('#partnerSelection').empty();
+        return;
+      }
 
-          if ($(this).data('can-have-background')) {
-              $('.background-selection').show();
-              populateBackgroundOptions();
-          } else {
-              addCommanderToRoster(selectedCommanderData, null);
-          }
+      var scryfallApiUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(partnerWithName)}`;
+      console.log("Fetching specific partner with name:", partnerWithName); // Debugging
+
+      $.ajax({
+        url: scryfallApiUrl,
+        type: 'GET',
+        success: function(data) {
+          $('#partnerSelection').empty();
+          $('#partnerSelection').append($('<option>', {
+            value: data.name,
+            text: data.name
+          }));
+          console.log("Specific partner data loaded:", data); // Debugging
+        },
+        error: function(error) {
+          console.error('Error fetching specific partner:', error); // Debugging
+        }
       });
+    }
 
-      // Populate Background Options
-      function populateBackgroundOptions() {
-          var scryfallBackgroundApiUrl = `https://api.scryfall.com/cards/search?q=type:background`;
-          
-          // AJAX call to get backgrounds from Scryfall API
-          $.ajax({
-              url: scryfallBackgroundApiUrl,
-              type: 'GET',
-              success: function(data) {
-                  $('#backgroundSelection').empty();
-                  $('#backgroundSelection').append($('<option>', {
-                      value: '',
-                      text: 'Select a background',
-                      disabled: true,
-                      selected: true
-                  }));
+    function populateBackgroundOptions() {
+      var scryfallBackgroundApiUrl = `https://api.scryfall.com/cards/search?q=type:background`;
+      console.log("Fetching backgrounds from:", scryfallBackgroundApiUrl); // Debugging
 
-                  data.data.forEach(function(background) {
-                      $('#backgroundSelection').append($('<option>', {
-                          value: background.name,
-                          text: background.name
-                      }));
-                      allBackgrounds[background.name] = {
-                      image_url: background.image_uris.normal,
-                      mana_cost: background.mana_cost,
-                      cmc: background.cmc
-                      };
-                  });
-              },
-              error: function(error) {
-                  console.error('Error fetching backgrounds:', error);
-              }
+      $.ajax({
+        url: scryfallBackgroundApiUrl,
+        type: 'GET',
+        success: function(data) {
+          $('#backgroundSelection').empty();
+          $('#backgroundSelection').append($('<option>', {
+            value: '',
+            text: 'Select a background',
+            disabled: true,
+            selected: true
+          }));
+
+          data.data.forEach(function(background) {
+            $('#backgroundSelection').append($('<option>', {
+              value: background.name,
+              text: background.name
+            }));
+
+            allBackgrounds[background.name] = {
+              image_url: background.image_uris.normal,
+              mana_cost: background.mana_cost,
+              cmc: background.cmc
+            };
           });
+          console.log("Backgrounds loaded:", data); // Debugging
+        },
+        error: function(error) {
+          console.error('Error fetching backgrounds:', error); // Debugging
+        }
+      });
+    }
+
+    // Submit Commander function
+    function submitCommander() {
+      console.log("submitCommander function called. Data:", selectedCommanderData); // Debugging
+
+      var backgroundName = $('#backgroundSelection').val();
+      var partnerName = $('#partnerSelection').val();
+
+      if (!selectedCommanderData) {
+        alert('Please select a commander');
+        return;
       }
 
-      // Submit Commander
-      function submitCommander() {
-          var backgroundName = $('#backgroundSelection').val();
+      var backgroundDetails = backgroundName ? allBackgrounds[backgroundName] : null;
+      var partnerDetails = partnerName ? allPartners[partnerName] : null;
 
-          if (!selectedCommanderData) {
-              alert('Please select a commander');
-              return;
-          }
+      var commanderData = {
+        ...selectedCommanderData,
+        background: backgroundDetails ? {
+            ...backgroundDetails,
+            name: backgroundName
+        } : null,
+        partner: partnerDetails ? {
+            ...partnerDetails,
+            name: partnerName
+        } : null
+      };
 
-          // Retrieve background details from allBackgrounds, excluding color_identity
-        var backgroundDetails = backgroundName ? {
-        name: backgroundName,
-        mana_cost: allBackgrounds[backgroundName].mana_cost,
-        cmc: allBackgrounds[backgroundName].cmc,
-        image_url: allBackgrounds[backgroundName].image_url
-        } : null;
+      console.log("Commander Data being submitted:", commanderData); // Debugging
+      addCommanderToRoster(commanderData);
+    }
+    // Add Commander to Roster function
+    function addCommanderToRoster(commanderData) {
+      console.log("Adding Commander to Roster. Data:", commanderData); // Debugging
 
-        var commanderData = {
-        ...selectedCommanderData, // Include all commander data
-        background: backgroundDetails
-    };
+      $.ajax({
+        url: '/add_commander',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(commanderData),
+        headers: { 'X-CSRFToken': csrfToken },
+        success: function(response) {
+          console.log("Commander added successfully. Response:", response); // Debugging
+          window.location.reload();
+        },
+        error: function(error) {
+          console.error("Error adding commander. Error:", error); // Debugging
+        }
+      });
+    }
 
-    addCommanderToRoster(commanderData);
-}
-
-      // Add Commander to Roster
-      function addCommanderToRoster(commanderData) {
-          console.log("Adding Commander to Roster", commanderData);
-          
-          $.ajax({
-              url: '/add_commander',
-              type: 'POST',
-              contentType: 'application/json',
-              data: JSON.stringify(commanderData),
-              headers: { 'X-CSRFToken': csrfToken },
-              success: function(response) {
-                  console.log("Commander added:", response);
-                  window.location.reload();
-              },
-              error: function(error) {
-                  console.error("Error adding commander:", error);
-              }
-          });
-      }
-  });
-
-  // Tab Switch Handler
-  $(document).ready(function() {
+    // Tab Switch Handler
     $('#accountTabs a').on('click', function (e) {
       e.preventDefault();
       $(this).tab('show');
     });
-  });
 
-  // Avatar Upload Handling
-  $(document).ready(function() {
+    // Avatar Upload Handling
     $('#avatarUploadForm').submit(function(e) {
-        e.preventDefault();
+      e.preventDefault();
 
-        $.ajax({
-            url: '/upload_avatar',
-            type: 'POST',
-            data: new FormData(this),
-            processData: false,
-            contentType: false,
-            beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token() }}');
-            },
-            success: function(response) {
-                alert('Avatar updated successfully!');
-                window.location.reload();
-            },
-            error: function(error) {
-                console.error('Error uploading avatar:', error);
-            }
-        });
+      var formData = new FormData(this);
+      console.log("Uploading avatar. FormData:", formData); // Debugging
+
+      $.ajax({
+        url: '/upload_avatar',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        beforeSend: function(xhr) {
+          xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token() }}');
+        },
+        success: function(response) {
+          alert('Avatar updated successfully!');
+          console.log("Avatar upload response:", response); // Debugging
+          window.location.reload();
+        },
+        error: function(error) {
+          console.error('Error uploading avatar:', error); // Debugging
+        }
+      });
     });
   });
 </script>

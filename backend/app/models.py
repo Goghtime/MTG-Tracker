@@ -30,6 +30,7 @@ class Commander(db.Model):
     cmc = db.Column(db.Integer)
     active = db.Column(db.Boolean, default=True)
     can_have_background = db.Column(db.Boolean, default=False)
+    can_have_partner = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f'<Commander {self.name}>'
@@ -47,10 +48,22 @@ class Deck(db.Model):
     background_cmc = db.Column(db.Integer, nullable=True)
     background_image_url = db.Column(db.String(255), nullable=True)
 
+    # Partner related fields
+    partner_name = db.Column(db.String(100), nullable=True)
+    partner_mana_cost = db.Column(db.String(50), nullable=True)
+    partner_cmc = db.Column(db.Integer, nullable=True)
+    partner_image_url = db.Column(db.String(255), nullable=True)
+
     # Relationships
     user = db.relationship('User', backref=db.backref('decks', lazy=True))
     commander = db.relationship('Commander', backref=db.backref('decks', lazy=True))
 
-    def __repr__(self):
-        return f'<Deck User: {self.user_id}, Commander: {self.commander_id}, Background: {self.background_name}>'
+def __repr__(self):
+    details = f'<Deck User: {self.user_id}, Commander: {self.commander_id}'
+    if self.background_name:
+        details += f', Background: {self.background_name}'
+    elif self.partner_name:
+        details += f', Partner: {self.partner_name}'
+    details += '>'
+    return details
 
