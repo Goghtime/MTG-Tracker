@@ -58,51 +58,56 @@
   </div>
 </div>
   
-  <!-- Active Roster -->
-  <div class="tab-pane fade show active" id="active-roster">
-    <h3 class="text-center my-3">Active Roster</h3>
-    <ul class="list-group mb-4">
-      {% for commander in active_commanders %}
-      <li
-        class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          <strong>{{ commander.name }}</strong>
-          <div>Color Identity: {{ commander.color_identity }}</div>
-          <div>Mana Cost: {{ commander.mana_cost }}</div>
-        </div>
-        <div>
-          Wins: {{ commander.wins }} | Losses: {{ commander.losses }}
-        </div>
-        <button type="button" class="btn btn-danger commander-toggle" data-commander-id="{{ commander.id }}" data-is-active="false">Retire</button>
+<!-- Active Roster -->
+<div class="tab-pane fade show active" id="active-roster">
+  <h3 class="text-center my-3">Active Roster</h3>
+  <ul class="list-group mb-4 active-roster">
+      {% for commander_detail in active_commanders %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+              <strong>
+                  {{ commander_detail.commander.name }}
+                  {% if commander_detail.background_or_partner %}
+                      // {{ commander_detail.background_or_partner }}
+                  {% endif %}
+              </strong>
+              <div>Wins: {{ commander_detail.commander.wins }} | Losses: {{ commander_detail.commander.losses }}</div>
+          </div>
+          <div>
+              <button type="button" class="btn btn-danger commander-toggle" data-commander-id="{{ commander_detail.commander.id }}" data-is-active="false">Retire</button>
+          </div>
       </li>
       {% else %}
       <p class="text-center">No active commanders in your roster.</p>
       {% endfor %}
-    </ul>
-  </div>
-  <!-- Retired Roster -->
-  <div class="tab-pane fade" id="retired-roster">
-    <h3 class="text-center my-3">Retired Roster</h3>
-    <ul class="list-group mb-4">
-      {% for commander in retired_commanders %}
-      <li
-        class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          <strong>{{ commander.name }}</strong>
-          <div>Color Identity: {{ commander.color_identity }}</div>
-          <div>Mana Cost: {{ commander.mana_cost }}</div>
-        </div>
-        <div>
-          Wins: {{ commander.wins }} | Losses: {{ commander.losses }}
-        </div>
-        <button type="button" class="btn btn-success commander-toggle" data-commander-id="{{ commander.id }}" data-is-active="true">Reactivate</button>
+  </ul>
+</div>
 
+<!-- Retired Roster -->
+<div class="tab-pane fade" id="retired-roster">
+  <h3 class="text-center my-3">Retired Roster</h3>
+  <ul class="list-group mb-4 retired-roster">
+      {% for commander_detail in retired_commanders %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+              <strong>
+                  {{ commander_detail.commander.name }}
+                  {% if commander_detail.background_or_partner %}
+                      // {{ commander_detail.background_or_partner }}
+                  {% endif %}
+              </strong>
+              <div>Wins: {{ commander_detail.commander.wins }} | Losses: {{ commander_detail.commander.losses }}</div>
+          </div>
+          <div>
+              <button type="button" class="btn btn-success commander-toggle" data-commander-id="{{ commander_detail.commander.id }}" data-is-active="true">Reactivate</button>
+          </div>
       </li>
       {% else %}
       <p class="text-center">No retired commanders in your roster.</p>
       {% endfor %}
-    </ul>
-  </div>
+  </ul>
+</div>
+
 
   <!-- Delete Commander -->
   <div class="tab-pane fade" id="delete-commander">

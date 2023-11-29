@@ -49,3 +49,21 @@ h2, h3 {
 .background-selection {
     display: none;
 }
+
+/* For Active Roster */
+.active-roster li:nth-child(odd) {
+    background-color: #f2f2f2; /* Light gray for odd rows */
+}
+
+.active-roster li:nth-child(even) {
+    background-color: #ffffff; /* White for even rows */
+}
+
+/* For Retired Roster */
+.retired-roster li:nth-child(odd) {
+    background-color: #e6e6e6; /* Slightly darker gray for odd rows */
+}
+
+.retired-roster li:nth-child(even) {
+    background-color: #cccccc; /* Even darker gray for even rows */
+}

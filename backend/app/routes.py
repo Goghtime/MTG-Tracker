@@ -56,9 +56,32 @@ def logout():
 def account():
     active_commanders = Commander.query.filter_by(user_id=current_user.id, active=True).all()
     retired_commanders = Commander.query.filter_by(user_id=current_user.id, active=False).all()
+
+    # Creating a structure that includes background or partner details for active commanders
+    active_commander_details = []
+    for commander in active_commanders:
+        deck_entry = Deck.query.filter_by(commander_id=commander.id).first()
+        commander_info = {
+            "commander": commander,
+            "background_or_partner": (deck_entry.background_name if deck_entry and deck_entry.background_name else
+                           deck_entry.partner_name if deck_entry and deck_entry.partner_name else None)
+        }
+        active_commander_details.append(commander_info)
+
+    # Creating a structure that includes background or partner details for retired commanders
+    retired_commander_details = []
+    for commander in retired_commanders:
+        deck_entry = Deck.query.filter_by(commander_id=commander.id).first()
+        commander_info = {
+            "commander": commander,
+            "background_or_partner": (deck_entry.background_name if deck_entry and deck_entry.background_name else
+                           deck_entry.partner_name if deck_entry and deck_entry.partner_name else None)
+        }
+        retired_commander_details.append(commander_info)
+
     return render_template('account.html', 
-                           active_commanders=active_commanders, 
-                           retired_commanders=retired_commanders)
+                           active_commanders=active_commander_details, 
+                           retired_commanders=retired_commander_details)
 
 @app.route('/search_commanders', methods=['GET'])
 def search_commanders():
@@ -206,3 +229,4 @@ def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
