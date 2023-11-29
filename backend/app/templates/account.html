@@ -73,8 +73,7 @@
         <div>
           Wins: {{ commander.wins }} | Losses: {{ commander.losses }}
         </div>
-        <button type="button" class="btn btn-danger"
-          onclick="toggleCommanderStatus({{ commander.id }}, false)">Retire</button>
+        <button type="button" class="btn btn-danger commander-toggle" data-commander-id="{{ commander.id }}" data-is-active="false">Retire</button>
       </li>
       {% else %}
       <p class="text-center">No active commanders in your roster.</p>
@@ -96,8 +95,8 @@
         <div>
           Wins: {{ commander.wins }} | Losses: {{ commander.losses }}
         </div>
-        <button type="button" class="btn btn-success"
-          onclick="toggleCommanderStatus({{ commander.id }}, true)">Reactivate</button>
+        <button type="button" class="btn btn-success commander-toggle" data-commander-id="{{ commander.id }}" data-is-active="true">Reactivate</button>
+
       </li>
       {% else %}
       <p class="text-center">No retired commanders in your roster.</p>
@@ -190,6 +189,12 @@
 
   $(document).ready(function() {
     var $searchResultsAdd = $('#search-results-add');
+
+    $('.commander-toggle').on('click', function() {
+    var commanderId = $(this).data('commander-id');
+    var isActive = $(this).data('is-active') === 'true'; // Ensure correct boolean value
+    toggleCommanderStatus(commanderId, !isActive); // Toggle the status
+});
 
     $('#addCommanderButton').on('click', function() {
       submitCommander();
@@ -563,6 +568,21 @@ function submitCommanderData(commanderData) {
         }
       });
     }
+
+    function toggleCommanderStatus(commanderId, isActive) {
+    $.ajax({
+        url: `/toggle_commander/${commanderId}`,
+        type: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        success: function(response) {
+            console.log("Commander status toggled successfully.");
+            window.location.reload(); // Reload the page to reflect the changes
+        },
+        error: function(error) {
+            console.error("Error toggling commander status.", error);
+        }
+    });
+}
 
     // Tab Switch and Avatar Upload Handlers
     $('#accountTabs a').on('click', function (e) {
