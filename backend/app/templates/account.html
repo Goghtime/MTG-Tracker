@@ -185,6 +185,7 @@
   var selectedCommanderData = null;
   var allBackgrounds = {}; 
   var allPartners = {};
+  var allDoctors = {};  // For storing Doctor's Companion commanders
   var csrfToken = $('meta[name="csrf-token"]').attr('content');
 
   $(document).ready(function() {
@@ -214,26 +215,33 @@
           type: 'GET',
           success: function(data) {
             var items = [];
-            console.log("Commanders fetched:", data); // Debugging
+            console.log("Commanders fetched:", data);
             data.data.forEach(function(card) {
-              var hasPartnerWith = card.keywords.includes("Partner with");
+              console.log("Card Data:", card);
+              var isDoctorsCompanion = card.keywords.includes("Doctor's companion");
+              var hasPartnerWith = card.keywords.includes("Partner with");  // Adjusted logic
               var partnerWithName = hasPartnerWith ? extractPartnerName(card.all_parts, card.name) : "";
-              var canHavePartner = card.keywords.includes("Partner") && !hasPartnerWith;
+              var canHavePartner = card.keywords.includes("Partner") || hasPartnerWith; // Adjusted logic
 
-              items.push(`<button type="button" class="commander-item" 
-              data-id="${card.id}"
-              data-all-parts='${JSON.stringify(card.all_parts || [])}'
-              data-oracle-text="${card.oracle_text || ''}"
-              data-name="${card.name}" 
-              data-color-identity="${card.color_identity.join(', ')}" 
-              data-image-url="${card.image_uris ? card.image_uris.normal : 'defaultImageUrl'}" 
-              data-mana-cost="${card.mana_cost || ''}" 
-              data-cmc="${card.cmc || 0}"
-              data-can-have-background="${Array.isArray(card.keywords) && card.keywords.includes("Choose a background")}"
-              data-can-have-partner="${canHavePartner}"
-              data-can-have-partner-with="${hasPartnerWith}"
-              data-partner-with-name="${partnerWithName}"
-              >${card.name}</button>`);
+              console.log(card.name + " - Keywords: " + card.keywords.join(', '));
+              console.log(card.name + " is Doctor's Companion: " + isDoctorsCompanion);
+              console.log(card.name + " can have partner: " + canHavePartner); // Debugging
+
+              items.push(`<button type="button" class="commander-item"
+                data-id="${card.id}"
+                data-all-parts='${JSON.stringify(card.all_parts || [])}'
+                data-oracle-text="${card.oracle_text || ''}"
+                data-name="${card.name}" 
+                data-color-identity="${card.color_identity.join(', ')}" 
+                data-image-url="${card.image_uris ? card.image_uris.normal : 'defaultImageUrl'}" 
+                data-mana-cost="${card.mana_cost || ''}" 
+                data-cmc="${card.cmc || 0}"
+                data-can-have-background="${Array.isArray(card.keywords) && card.keywords.includes("Choose a background")}"
+                data-can-have-partner="${canHavePartner}"
+                data-can-have-partner-with="${hasPartnerWith}"
+                data-is-doctors-companion="${isDoctorsCompanion}"
+                data-partner-with-name="${partnerWithName}"
+                >${card.name}</button>`);
             });
             $searchResultsAdd.html(items.join(''));
           },
@@ -258,10 +266,9 @@
 
       return partnerCard ? partnerCard.name : "";
     }
-
     // Commander Item Click Handling
     $searchResultsAdd.on('click', '.commander-item', function() {
-      console.log("Commander item clicked. Data:", $(this).data()); // Debugging
+      console.log("Commander item clicked. Data:", $(this).data());
       selectedCommanderData = {
         name: $(this).data('name'),
         color_identity: $(this).data('color-identity'),
@@ -271,28 +278,74 @@
         can_have_partner: $(this).data('can-have-partner'),
         can_have_background: $(this).data('can-have-background'),
         can_have_partner_with: $(this).data('can-have-partner-with'),
+        is_doctors_companion: $(this).data('is-doctors-companion'),
         partner_with_name: extractPartnerName($(this).data('all-parts'), $(this).data('name')),
         id: $(this).data('id')
       };
 
+      // Reset and hide all selection dropdowns
       $('.background-selection, .partner-selection').hide();
+      $('#backgroundSelection').empty();
+      $('#partnerSelection').empty();
 
+      // Populate appropriate dropdowns based on selected commander data
       if (selectedCommanderData.can_have_background) {
         $('.background-selection').show();
         populateBackgroundOptions();
-      } else if (selectedCommanderData.can_have_partner) {
+      } 
+      if (selectedCommanderData.can_have_partner) {
         $('.partner-selection').show();
         populatePartnerOptions();
-      } else if (selectedCommanderData.can_have_partner_with) {
+      } 
+      if (selectedCommanderData.is_doctors_companion) {
+        $('.partner-selection').show();
+        populateDoctorsCompanionOptions();
+      } 
+      if (selectedCommanderData.can_have_partner_with) {
         $('.partner-selection').show();
         populatePartnerWithNameOption(selectedCommanderData.partner_with_name);
-      } else {
-        addCommanderToRoster(selectedCommanderData, null);
       }
     });
+
+    // Function to populate options for "Doctor's Companion"
+    function populateDoctorsCompanionOptions() {
+      var scryfallDoctorApiUrl = `https://api.scryfall.com/cards/search?q=type:legendary+Doctor+is:commander`;
+      console.log("Fetching Doctors Companion commanders from:", scryfallDoctorApiUrl);
+
+      $.ajax({
+        url: scryfallDoctorApiUrl,
+        type: 'GET',
+        success: function(data) {
+          $('#partnerSelection').empty();
+          $('#partnerSelection').append($('<option>', {
+            value: '',
+            text: 'Select a Doctor',
+            disabled: true,
+            selected: true
+          }));
+
+          data.data.forEach(function(doctor) {
+            $('#partnerSelection').append($('<option>', {
+              value: doctor.name,
+              text: doctor.name
+            }));
+            allDoctors[doctor.name] = {
+              image_url: doctor.image_uris ? doctor.image_uris.normal : 'defaultDoctorImageUrl',
+              mana_cost: doctor.mana_cost,
+              cmc: doctor.cmc
+            };
+          });
+          console.log("Doctors Companion commanders loaded:", data);
+        },
+        error: function(error) {
+          console.error('Error fetching Doctors Companion commanders:', error);
+        }
+      });
+    }
+
     function populatePartnerOptions() {
       var scryfallPartnerApiUrl = `https://api.scryfall.com/cards/search?q=type:legendary+keyword:partner+-o:/partner%20with/`;
-      console.log("Fetching partners from:", scryfallPartnerApiUrl); // Debugging
+      console.log("Fetching partners from:", scryfallPartnerApiUrl);
 
       $.ajax({
         url: scryfallPartnerApiUrl,
@@ -307,12 +360,11 @@
           }));
 
           data.data.forEach(function(partner) {
-            if(partner.keywords.includes("Partner") && !partner.oracle_text.includes("partner with")) {
+            if (partner.keywords.includes("Partner") && !partner.oracle_text.includes("partner with")) {
               $('#partnerSelection').append($('<option>', {
                 value: partner.name,
                 text: partner.name
               }));
-
               allPartners[partner.name] = {
                 image_url: partner.image_uris ? partner.image_uris.normal : 'defaultPartnerImageUrl',
                 mana_cost: partner.mana_cost,
@@ -320,14 +372,13 @@
               };
             }
           });
-          console.log("Partners loaded:", data); // Debugging
+          console.log("Partners loaded:", data);
         },
         error: function(error) {
-          console.error('Error fetching partners:', error); // Debugging
+          console.error('Error fetching partners:', error);
         }
       });
     }
-
     function populatePartnerWithNameOption(partnerWithName) {
       if (!partnerWithName) {
         $('#partnerSelection').empty();
@@ -335,7 +386,7 @@
       }
 
       var scryfallApiUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(partnerWithName)}`;
-      console.log("Fetching specific partner with name:", partnerWithName); // Debugging
+      console.log("Fetching specific partner with name:", partnerWithName);
 
       $.ajax({
         url: scryfallApiUrl,
@@ -346,17 +397,17 @@
             value: data.name,
             text: data.name
           }));
-          console.log("Specific partner data loaded:", data); // Debugging
+          console.log("Specific partner data loaded:", data);
         },
         error: function(error) {
-          console.error('Error fetching specific partner:', error); // Debugging
+          console.error('Error fetching specific partner:', error);
         }
       });
     }
 
     function populateBackgroundOptions() {
       var scryfallBackgroundApiUrl = `https://api.scryfall.com/cards/search?q=type:background`;
-      console.log("Fetching backgrounds from:", scryfallBackgroundApiUrl); // Debugging
+      console.log("Fetching backgrounds from:", scryfallBackgroundApiUrl);
 
       $.ajax({
         url: scryfallBackgroundApiUrl,
@@ -375,54 +426,127 @@
               value: background.name,
               text: background.name
             }));
-
             allBackgrounds[background.name] = {
               image_url: background.image_uris.normal,
               mana_cost: background.mana_cost,
               cmc: background.cmc
             };
           });
-          console.log("Backgrounds loaded:", data); // Debugging
+          console.log("Backgrounds loaded:", data);
         },
         error: function(error) {
-          console.error('Error fetching backgrounds:', error); // Debugging
+          console.error('Error fetching backgrounds:', error);
         }
       });
     }
 
-    // Submit Commander function
+    // Main Commander Submission Logic
     function submitCommander() {
-      console.log("submitCommander function called. Data:", selectedCommanderData); // Debugging
+    console.log("submitCommander function called. Data:", selectedCommanderData);
 
-      var backgroundName = $('#backgroundSelection').val();
-      var partnerName = $('#partnerSelection').val();
+    var backgroundName = $('#backgroundSelection').val();
+    var partnerName = $('#partnerSelection').val();
 
-      if (!selectedCommanderData) {
+    if (!selectedCommanderData) {
         alert('Please select a commander');
         return;
-      }
-
-      var backgroundDetails = backgroundName ? allBackgrounds[backgroundName] : null;
-      var partnerDetails = partnerName ? allPartners[partnerName] : null;
-
-      var commanderData = {
-        ...selectedCommanderData,
-        background: backgroundDetails ? {
-            ...backgroundDetails,
-            name: backgroundName
-        } : null,
-        partner: partnerDetails ? {
-            ...partnerDetails,
-            name: partnerName
-        } : null
-      };
-
-      console.log("Commander Data being submitted:", commanderData); // Debugging
-      addCommanderToRoster(commanderData);
     }
-    // Add Commander to Roster function
+
+    var commanderData = {
+        ...selectedCommanderData,
+        background: null,
+        partner: null
+    };
+
+    // Background logic
+    if (selectedCommanderData.can_have_background && backgroundName) {
+        commanderData.background = {
+            ...allBackgrounds[backgroundName],
+            name: backgroundName
+        };
+    }
+
+    // Doctor's Companion logic
+    if (selectedCommanderData.is_doctors_companion && partnerName) {
+        commanderData.partner = {
+            ...allDoctors[partnerName],
+            name: partnerName
+        };
+    }
+    // Regular Partner logic
+    else if (selectedCommanderData.can_have_partner && partnerName) {
+        commanderData.partner = {
+            ...allPartners[partnerName],
+            name: partnerName
+        };
+    }
+
+    // Partner With logic
+    if (selectedCommanderData.can_have_partner_with) {
+        fetchPartnerDetails(selectedCommanderData.partner_with_name, function(fetchedPartnerDetails) {
+            if (fetchedPartnerDetails) {
+                commanderData.partner = fetchedPartnerDetails;
+                console.log("Commander Data being submitted with partner:", commanderData);
+                addCommanderToRoster(commanderData);
+            } else {
+                console.error('Error fetching partner details for ' + selectedCommanderData.partner_with_name);
+            }
+        });
+        return; // Return early to handle asynchronous call
+    } else {
+        // For cases where partner with is not selected
+        console.log("Commander Data being submitted:", commanderData);
+        addCommanderToRoster(commanderData);
+    }
+}
+
+function fetchPartnerDetails(partnerName, callback) {
+    var scryfallApiUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(partnerName)}`;
+    console.log("Fetching partner details for:", partnerName);
+
+    $.ajax({
+        url: scryfallApiUrl,
+        type: 'GET',
+        success: function(data) {
+            var fetchedPartnerDetails = {
+                name: partnerName, // Include the partner name
+                image_url: data.image_uris ? data.image_uris.normal : 'defaultPartnerImageUrl',
+                mana_cost: data.mana_cost,
+                cmc: data.cmc
+            };
+            allPartners[partnerName] = fetchedPartnerDetails; // Store fetched data
+            console.log("Partner details fetched:", fetchedPartnerDetails);
+            callback(fetchedPartnerDetails);
+        },
+        error: function(error) {
+            console.error('Error fetching partner details:', error);
+            callback(null);
+        }
+    });
+}
+
+
+function submitCommanderData(commanderData) {
+    // Construct submission data
+    var dataToSubmit = {
+        ...commanderData,
+        background: commanderData.background || null,
+        partner: commanderData.partner ? {
+            name: commanderData.partner.name,
+            image_url: commanderData.partner.image_url,
+            mana_cost: commanderData.partner.mana_cost,
+            cmc: commanderData.partner.cmc
+        } : null
+    };
+
+    console.log("Commander Data being submitted:", dataToSubmit);
+    addCommanderToRoster(dataToSubmit);
+}
+
+
+    // Add Commander to Roster Function
     function addCommanderToRoster(commanderData) {
-      console.log("Adding Commander to Roster. Data:", commanderData); // Debugging
+      console.log("Adding Commander to Roster. Data:", commanderData);
 
       $.ajax({
         url: '/add_commander',
@@ -431,27 +555,26 @@
         data: JSON.stringify(commanderData),
         headers: { 'X-CSRFToken': csrfToken },
         success: function(response) {
-          console.log("Commander added successfully. Response:", response); // Debugging
+          console.log("Commander added successfully. Response:", response);
           window.location.reload();
         },
         error: function(error) {
-          console.error("Error adding commander. Error:", error); // Debugging
+          console.error("Error adding commander. Error:", error);
         }
       });
     }
 
-    // Tab Switch Handler
+    // Tab Switch and Avatar Upload Handlers
     $('#accountTabs a').on('click', function (e) {
       e.preventDefault();
       $(this).tab('show');
     });
 
-    // Avatar Upload Handling
     $('#avatarUploadForm').submit(function(e) {
       e.preventDefault();
 
       var formData = new FormData(this);
-      console.log("Uploading avatar. FormData:", formData); // Debugging
+      console.log("Uploading avatar. FormData:", formData);
 
       $.ajax({
         url: '/upload_avatar',
@@ -464,11 +587,11 @@
         },
         success: function(response) {
           alert('Avatar updated successfully!');
-          console.log("Avatar upload response:", response); // Debugging
+          console.log("Avatar upload response:", response);
           window.location.reload();
         },
         error: function(error) {
-          console.error('Error uploading avatar:', error); // Debugging
+          console.error('Error uploading avatar:', error);
         }
       });
     });

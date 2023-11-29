@@ -74,7 +74,7 @@ def search_commanders():
 def add_commander():
     try:
         data = request.get_json()
-
+        print("Received data:", data)  # Debugging line
         # Create and add new commander
         new_commander = Commander(
             user_id=current_user.id,
@@ -117,9 +117,11 @@ def add_commander():
         return jsonify({'message': 'Commander added successfully'}), 201
 
     except KeyError as e:
+        print("KeyError:", e)
         db.session.rollback()
         return jsonify({'error': f'Missing data for {e.args[0]}'}), 400
     except Exception as e:
+        print("Exception:", e)
         db.session.rollback()
         logging.error(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
